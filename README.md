@@ -124,5 +124,6 @@ Finally add the following lines to `crontab -e`:
 @reboot /home/pi/appliancemon/applimon.py -c /home/pi/dryerconfig.yml &
 ```
 
--
+---
+
 Licensed under CC0.
