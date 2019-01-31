@@ -1,4 +1,4 @@
-#Is the wash done?
+# Is the wash done?
 
 Checking if the washing machine is done is a popular (not to mention useful) application. This is often done by sticking LDRs to the washing machine, adding IMU sensors or analyzing mains power usage or even the sound emitted.
 
@@ -26,13 +26,13 @@ MJPEG Streamer is used for snapping pictures and ImageMagick for processing. Pic
 
 Here is an unprocessed cropped picture of the washing machine display when the room is lit:
 
-![](images/lights on.png)
+![](images/lights-on.png)
 
 (Applying blur and threshold filters now yields a completely white picture from which we can only determine the lights are on)
 
 The same picture with the lights off:
 
-![](images/lights off.png)
+![](images/lights-off.png)
 
 Blur and threshold filters applied:
 
@@ -40,7 +40,7 @@ Blur and threshold filters applied:
 
 Lights off, machine off, blur and threshold filters applied:
 
-![](images/lights off-proc.png)
+![](images/lights-off-proc.png)
 
 (all pixels are black)
 
