@@ -1,0 +1,75 @@
+#
+# Sample Appliance Monitor configuration file.
+
+[DEFAULT]
+
+# A name used to identify the MQTT client and log file. Unique in your household
+Name = washer
+
+# This is where we store images and the log file. Create a RAM disk that is
+# persistent across reboots (well, the concept of a RAM disk, obviously not
+# the content ;) using ./create-ramdisk.sh
+TempDir = /ram
+#TempDir = .
+
+# Where we can find a still image to process
+CamURL = http://wash.local:8080/?action=snapshot
+
+# Image processing parameters below:
+#
+# Percentage of black pixels indicating the three different observable states.
+#
+# >= 'PitchDarkLevel' : lights and appliance off
+PitchDarkLevel = 98
+# < 'PitchDarkLevel' and >= MachineOnLevel': lights and appliance on
+MachineOnLevel = 85
+# < 'MachineOnLevel' : lights on, appliance unknown
+
+# Used to remove noise from the image and turn all pixels into either black
+# or white
+Threshold = 6
+
+# Cropping speeds up the processing and increases the % of white pixels from
+# the appliance display. Additionally it allows for one camera to monitor
+# more that one appliance. Format below is ImageMagick style.
+#       w   h   x  y
+Crop = 300x150+30+365
+
+# ImageMagick blurring used to increase the number of white pixels from the
+# appliance display (https://www.imagemagick.org/Usage/blur/#blur)
+Blur = 0x6
+
+
+# When a change is detected we snap a series of images every 'StablePeriodSleep'
+# seconds and see if the change is constant.
+StablePeriodSleep = 5
+
+# If no change, wait LoopPeriodSleep before checking again
+LoopPeriodSleep = 30
+
+# MQTT publish if the lights in the room change. Can be turned off in case we're
+# monitoring several machines in the same room.
+ReportLightChange = yes
+
+# MQTT publish the calculated black level in each picture taken, for debugging
+ReportBlackLevel = no
+
+
+[MQTT]
+MQTTDisable = no
+MQTTBroker = gateway.local
+# Post lights on/off to this topic
+MQTTLightsTopic = home/washroomlights
+# Post appliance off to this topic
+MQTTApplianceTopic = home/washer
+
+
+[PUSHOVER]
+PushoverDisable = no
+PushoverTitle = Washing room
+PushoverMessageApplicanceDone = the washing is done
+PushoverMessageLightsOn = The lights are on
+PushoverMessageLightsOff = The lights are orr
+PushoverUser = <useruseruser>
+PushoverToken = <tokentokentoken>
+PushoverDevice = <devicedevicedevice>
