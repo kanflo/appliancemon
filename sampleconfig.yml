@@ -60,7 +60,7 @@ MQTTDisable = no
 MQTTBroker = gateway.local
 # Post lights on/off to this topic
 MQTTLightsTopic = home/washroomlights
-# Post appliance off to this topic
+# Post appliance on/off to this topic
 MQTTApplianceTopic = home/washer
 
 
