@@ -1,14 +1,14 @@
 # Is the wash done?
 
-Checking if the washing machine is done is a popular (not to mention useful) application. This is often done by sticking LDRs to the washing machine, adding IMU sensors or analyzing mains power usage or even the sound emitted.
+Checking if the washing machine is done is a popular (not to mention useful) application. This is often done by sticking light sensors to the washing machine, adding motion sensors or analyzing mains power usage or even the sound emitted.
 
 I needed a solution with minimal time effort as I have lots of other things I want to do so I went with a Raspberry Pi Zero W and a PiCamera. Starting as "wash monitor" it transformed to "appliance monitor" as any appliance can be monitored. I have a single Raspberry Pi keeping an eye on both the washing machine and the tumble dryer.
 
 The idea is simple, take a picture, process and count pixels:
 
-* All black: lights are off and the machine is off
-* Most black: lights are off and the machine is on
-* Few black: lights are on, machine state is unknown
+* All black pixels: lights are off and the machine is off
+* Most black pixels: lights are off and the machine is on
+* No or few black pixels: lights are on, machine state might be unknown
 
 Next, the "lights" and "machine" states are tracked and a notification is sent when "machine" goes from "on" to "off". Pushover is used as notification service and MQTT for general service monitoring.
 
@@ -45,7 +45,7 @@ Lights off, machine off, blur and threshold filters applied:
 (all pixels are black)
 
 
-## Installing and configuring
+## Installing
 
 You need ImageMagick, Python Requests and Paho MQTT and MJPG Streamer (and of course lots of stuff to be able to build):
 
@@ -85,18 +85,26 @@ To make it load on boot:
 sudo echo "bcm2835-v4l2" >> /etc/modules
 ```
 
-Snap a picture:
+## Configuring
+
+First of all you need to describe the bounding box of the appliance display. Start by taking a picture:
 
 ```
 curl -so image.jpg "http://wash.local:8080/?action=snapshot.png"
 ```
 
-Use this image to determine the crop area specified in [ImageMagick style](https://www.imagemagick.org/Usage/crop/#crop) ([blur](https://www.imagemagick.org/Usage/blur/) and threshold are also IM style, check the [ImageMagick documentation](https://www.imagemagick.org/Usage/) for help).
-
-Now try the cropping and calculate the black level. The last two zeroes are "blur" and "threshold" (zero means disable).
+Now determine the crop area specified in [ImageMagick style](https://www.imagemagick.org/Usage/crop/#crop) ([blur](https://www.imagemagick.org/Usage/blur/) and threshold are also IM style. A box at top/left 20/410, 290 pixels wide and 120 pixels tall would be:
 
 ```
-./applimon.py -c washconfig.yml -t "290x120+20+410 0 0" ; open image-proc-washer.png
+290x120+20+410
+```
+
+Check the [ImageMagick documentation](https://www.imagemagick.org/Usage/) for help.
+
+Now calculate the black level. The last two zeroes are "blur" and "threshold" (zero means disable).
+
+```
+./applimon.py -c washconfig.yml -t "290x120+20+410 0 0"
 Black level: 0%
 ```
 
@@ -114,7 +122,7 @@ And finally turn the machine off:
 Black level: 100%
 ```
 
-You may need to elaborate with the blur and threshold parameters to get satisfactory black levels. I use the ones in the sample config for both my washing machine and tumble dryer.
+You may need to elaborate with the blur and threshold parameters to get satisfactory black levels.
 
 Finally add the following lines to `crontab -e`:
 
@@ -122,6 +130,16 @@ Finally add the following lines to `crontab -e`:
 @reboot /home/pi/appliancemon/mjpg-streamer.sh start
 @reboot /home/pi/appliancemon/applimon.py -c /home/pi/washconfig.yml &
 @reboot /home/pi/appliancemon/applimon.py -c /home/pi/dryerconfig.yml &
+```
+
+
+## Testing
+
+For testing the ImageMagick image processing, ```applimon.py``` can be run in command line, offline mode
+
+```
+./applimon.py -t "59x32+285+68 0x4 21 test.jpg"
+Black level: 21%
 ```
 
 ---
