@@ -205,6 +205,7 @@ def main():
         parser.add_argument("-t", "--test", help="Test image processing parameters, eg. \"300x150+30+365 0x6 6 image.jpg\"", nargs='?', action="store", default="")
         parser.add_argument("-v", "--verbose", help="Increase output verbosity", action="store_true")
         parser.add_argument("-c", "--config", action="store", help="Configuration file", default="sampleconfig.yml")
+        parser.add_argument("-s", "--stdout", help="Log to stdout", action="store_true")
         args = parser.parse_args()
 
         config = configparser.ConfigParser()
@@ -252,6 +253,13 @@ def main():
         app_log = logging.getLogger()
         app_log.addHandler(my_handler)
         app_log.setLevel(level)
+
+        if args.stdout:
+            handler = logging.StreamHandler(sys.stdout)
+            handler.setLevel(logging.DEBUG)
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            handler.setFormatter(formatter)
+            app_log.addHandler(handler)
 
         logging.debug('---------------------------------------------------------')
         logging.debug('App started')
