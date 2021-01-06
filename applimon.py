@@ -95,7 +95,7 @@ def cmd_run(cmd):
 Capture an image, store in path, calculate and return the black level, ie. the
 percentage of all pixels being black or None if something b0rked.
 """
-def get_black_level(path, crop = None, blur = None, threshold = None):
+def get_black_level(path, crop = None, blur = None, threshold = None, image_fname = None):
     global config
     if crop == None:
         crop = config["DEFAULT"]["Crop"]
@@ -116,19 +116,20 @@ def get_black_level(path, crop = None, blur = None, threshold = None):
     else:
         threshold = " -threshold " + threshold + "% "
 
-    image = "%s/image-%s.jpg" % (path, config["DEFAULT"]["Name"])
-    image_proc = "%s/image-proc-%s.png" % (path, config["DEFAULT"]["Name"])
-    stdout, stderr = cmd_run("curl -so %s %s" % (image, config["DEFAULT"]["CamURL"]))
-    if len(stderr) > 0:
-        logging.error("curl failed. %s" % s.decode("utf-8"))
-        return None
+    image_proc_fname = "%s/image-processed-%s.png" % (path, config["DEFAULT"]["Name"])
+    if image_fname is None:
+        image_fname = "%s/image-%s.jpg" % (path, config["DEFAULT"]["Name"])
+        stdout, stderr = cmd_run("curl -so %s %s" % (image_fname, config["DEFAULT"]["CamURL"]))
+        if len(stderr) > 0:
+            logging.error("curl failed. %s" % stdout.decode("utf-8"))
+            return None
 
-    stdout, stderr = cmd_run("convert " + image + " -crop " + crop + " " + blur + " " + threshold + " " + image_proc)
+    stdout, stderr = cmd_run("convert " + image_fname + " -crop " + crop + " " + blur + " " + threshold + " " + image_proc_fname)
     if len(stderr) > 0:
         logging.error("Cropping failed: %s" % stderr.decode("utf-8"))
         return None
 
-    stdout, stderr = cmd_run("convert " + image_proc + " -define histogram:unique-colors=true -format %c histogram:info:-")
+    stdout, stderr = cmd_run("convert " + image_proc_fname + " -define histogram:unique-colors=true -format %c histogram:info:-")
     if len(stderr) > 0:
         logging.error("Histogram failed: %s" % stderr.decode("utf-8"))
         return None
@@ -201,7 +202,7 @@ def main():
     try:
         global config
         parser = argparse.ArgumentParser(description="This script monitors your washing machine or other appliance")
-        parser.add_argument("-t", "--test", action='append', help="Test image processing parameters",)
+        parser.add_argument("-t", "--test", help="Test image processing parameters, eg. \"300x150+30+365 0x6 6 image.jpg\"", nargs='?', action="store", default="")
         parser.add_argument("-v", "--verbose", help="Increase output verbosity", action="store_true")
         parser.add_argument("-c", "--config", action="store", help="Configuration file", default="sampleconfig.yml")
         args = parser.parse_args()
@@ -214,16 +215,27 @@ def main():
             print("use --create-config <filename> to create a default configuration file")
             sys.exit(1)
 
-        if args.test:
-            options = args.test[0].split(" ")
-            if len(options) != 3:
-                print("Error: %s -t \"<crop> <blur> <threshold>\"" % sys.argv[0])
-                print("  <crop>      : {X}x{Y}+{width}+{height}")
+        if args.test is None:
+            pct = get_black_level(".")
+            print("Black level: %d%%" % pct)
+            sys.exit(0)
+        elif args.test != "":
+            options = args.test.split(" ")
+            if len(options) == 3:
+                pct = get_black_level(".", crop = options[0], blur = options[1], threshold = options[2])
+            elif len(options) == 4:
+                pct = get_black_level(".", crop = options[0], blur = options[1], threshold = options[2], image_fname = options[3])
+            else:
+                print("Error: %s -t [\"<crop> <blur> <threshold> [<image>]\"]" % sys.argv[0])
+                print("  <crop>      : {width}x{height}+{x}+{y}")
                 print("  <blur>      : {radius}x{sigma}")
-                print("  <threshold> : {t}")
-                print("    Eg. %s -t \"300x150+30+365 0x6 6\"" % sys.argv[0])
+                print("  <threshold> : {threshhold}")
+                print("  <image>     : Name of file or none to capture image")
+                print("")
+                print("    Eg. %s -c myconfig.yml -t" % sys.argv[0])
+                print("        %s -t \"300x150+30+365 0x6 6\"" % sys.argv[0])
+                print("        %s -t \"300x150+30+365 0x6 6 image.jpg\"" % sys.argv[0])
                 sys.exit(1)
-            pct = get_black_level(".", options[0], options[1], options[2])
             print("Black level: %d%%" % pct)
             sys.exit(0)
 
